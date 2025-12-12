@@ -7,7 +7,7 @@ import "./interfaces/ICreatorTokenLegacy.sol";
 import "./interfaces/ITransferValidator.sol";
 import "./interfaces/ITransferValidatorSetTokenType.sol";
 import {Initializable} from "../openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-
+import "./interfaces/ILimitbreakAccountFreezer.sol";
 
 /**
  * @title CreatorTokenValidator
@@ -48,8 +48,12 @@ abstract contract CreatorTokenValidator is
     bool private isValidatorInitialized;
     /// @dev Address of the transfer validator to apply to transactions.
     address private transferValidator;
-    
-    event TokenTypeRegistrationFailed(address indexed validator, address indexed collection, bytes reason);
+
+    event TokenTypeRegistrationFailed(
+        address indexed validator,
+        address indexed collection,
+        bytes reason
+    );
 
     function __CreatorTokenValidator_init() internal onlyInitializing {
         _emitDefaultTransferValidator();
@@ -146,7 +150,6 @@ abstract contract CreatorTokenValidator is
         return uint16(TOKEN_TYPE_ERC721);
     }
 
-
     /// @dev Registers this collection’s token type with a validator contract (if provided).
     ///      - Checks that `validator` address is non-zero.
     ///      - Uses `extcodesize` via inline assembly to check that `validator` is indeed a deployed contract.
@@ -165,8 +168,12 @@ abstract contract CreatorTokenValidator is
                 try
                     ITransferValidatorSetTokenType(validator)
                         .setTokenTypeOfCollection(address(this), _tokenType())
-                {} catch (bytes memory reason){
-                emit TokenTypeRegistrationFailed(validator, address(this), reason);
+                {} catch (bytes memory reason) {
+                    emit TokenTypeRegistrationFailed(
+                        validator,
+                        address(this),
+                        reason
+                    );
                 }
             }
         }
@@ -203,11 +210,31 @@ abstract contract CreatorTokenValidator is
         address to,
         uint256 firstTokenId
     ) internal virtual {
-        bool fromZeroAddress = from == address(0);
-        bool toZeroAddress = to == address(0);
-
-        if (!fromZeroAddress && !toZeroAddress) {
-            _preValidateTransfer(caller, from, to, firstTokenId);
-        }
+        _preValidateTransfer(caller, from, to, firstTokenId);
     }
+
+    /// @notice Freezes the specified accounts for a given NFT collection.
+    /// @dev Calls the Limitbreak transfer validator to apply the freeze.
+    /// @param collection The address of the NFT collection.
+    /// @param accounts The list of accounts to freeze.
+    function _freeze(
+        address collection,
+        address[] calldata accounts
+    ) internal virtual {
+        ILimitbreakAccountFreezer(getTransferValidator())
+            .freezeAccountsForCollection(collection, accounts);
+    }
+
+    /// @notice Unfreezes the specified accounts for a given NFT collection.
+    /// @dev Calls the Limitbreak transfer validator to remove the freeze.
+    /// @param collection The address of the NFT collection.
+    /// @param accounts The list of accounts to unfreeze.
+    function _unfreeze(
+        address collection,
+        address[] calldata accounts
+    ) internal virtual {
+        ILimitbreakAccountFreezer(getTransferValidator())
+            .unfreezeAccountsForCollection(collection, accounts);
+    }
+
 }
