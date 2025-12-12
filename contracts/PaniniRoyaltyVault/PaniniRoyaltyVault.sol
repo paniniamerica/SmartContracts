@@ -209,24 +209,6 @@ contract PaniniRoyaltyVault is
 
     // -------- Approvals & Swaps --------
 
-    /**
-     * @notice Approves a token amount for swapping via a router.
-     * @param token Address of the ERC20 token.
-     * @param amount Amount to approve.
-     */
-    function setTokenAllowance(
-        address token,
-        uint256 amount
-    ) external whenNotPaused onlyRole(VAULT_MANAGER) nonReentrant {
-        require(token != address(0), "Invalid token address");
-        if (amount > 0) {
-            require(
-                IERC20(token).balanceOf(address(this)) >= amount,
-                "Insufficient Token Balance"
-            );
-        }
-        IERC20(token).approve(address(uniswapRouter), amount);
-    }
 
     /**
      * @notice Swaps ETH for a ERC20 token via Uniswap V3 router.
@@ -334,7 +316,7 @@ contract PaniniRoyaltyVault is
         nonReentrant
         returns (uint256 amountOut)
     {
-        require(amountIn > 0, "Must send ETH to swap");
+        require(amountIn > 0, "Must send amountIn to swap");
         require(inToken != address(0), "Invalid inToken Address");
         require(outToken != address(0), "Invalid outToken Address");
         require(

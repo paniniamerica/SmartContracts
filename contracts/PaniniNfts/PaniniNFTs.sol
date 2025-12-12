@@ -142,7 +142,7 @@ contract PaniniBlockchain is
      * @param tokenId The ID of the token to be minted
      * @param uri Metadata URI associated with the token
      * @dev Can only be called by PANINI_NFT_OPERATOR
-     * 
+     *
      * NOTE: Sending tokens to contract addresses triggers `onERC721Received`,
      * allowing the receiver contract to run arbitrary code.
      * Risks:
@@ -183,7 +183,6 @@ contract PaniniBlockchain is
         )
         returns (address)
     {
-
         // limit break beforeTokenTransfer hook
         _beforeTokenTransfer(auth, _ownerOf(tokenId), to, tokenId);
 
@@ -547,5 +546,21 @@ contract PaniniBlockchain is
         uint256 requestNonce
     ) public view returns (string memory) {
         return usedNonces[requestNonce] ? "PROCESSED" : "UNPROCESSED";
+    }
+
+    /// @notice Freezes the given accounts for this NFT collection.
+    /// @param accounts The addresses to freeze.
+    function freezeAccounts(
+        address[] calldata accounts
+    ) external onlyRole(PANINI_NFT_MANAGER) {
+        _freeze(address(this), accounts);
+    }
+
+    /// @notice Unfreezes the given accounts for this NFT collection.
+    /// @param accounts The addresses to unfreeze.
+    function unfreezeAccounts(
+        address[] calldata accounts
+    ) external onlyRole(PANINI_NFT_MANAGER) {
+        _unfreeze(address(this), accounts);
     }
 }
